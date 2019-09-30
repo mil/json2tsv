@@ -1,4 +1,3 @@
-/* Simple JSON to TAB converter. This makes it easy to query values per line. */
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -102,7 +101,7 @@ capacity(char **value, size_t *sz, size_t cur, size_t inc)
 void
 parsejson(void (*cb)(struct json_node *, size_t, const char *))
 {
-	struct json_node nodes[JSON_MAX_NODE_DEPTH];
+	struct json_node nodes[JSON_MAX_NODE_DEPTH] = { 0 };
 	long cp;
 	size_t depth = 0, v = 0, vz = 0;
 	int c, escape;
@@ -174,6 +173,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 				capacity(&value, &vz, v, 2);
 				value[v++] = c;
 			}
+			capacity(&value, &vz, v, 1);
 			value[v] = '\0';
 			break;
 		case '[':
@@ -222,18 +222,20 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 			}
 		}
 	}
+	free(value);
 }
 
 void
 printvalue(const char *s)
 {
 	for (; *s; s++) {
-		/* escape chars and ignore. */
+		/* escape some chars */
 		switch (*s) {
 		case '\n': fputs("\\n",  stdout); break;
 		case '\\': fputs("\\\\", stdout); break;
 		case '\t': fputs("\\t",  stdout); break;
 		default:
+			/* ignore other control chars */
 			if (iscntrl((unsigned char)*s))
 				continue;
 			putchar(*s);
