@@ -24,7 +24,7 @@ enum JSONType {
 
 struct json_node {
 	char name[256]; /* fixed size, too long keys will be truncated */
-	enum JSONType _type;
+	enum JSONType type;
 	size_t index; /* count/index for TYPE_ARRAY and TYPE_OBJECT */
 };
 
@@ -119,11 +119,11 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 				strlcpy(nodes[depth].name, value, sizeof(nodes[depth].name));
 				v = 0;
 			}
-			nodes[depth]._type = TYPE_PRIMITIVE;
+			nodes[depth].type = TYPE_PRIMITIVE;
 			break;
 		case '"':
 			v = 0;
-			nodes[depth]._type = TYPE_STRING;
+			nodes[depth].type = TYPE_STRING;
 			for (escape = 0; (c = GETNEXT()) != EOF;) {
 				if (iscntrl(c))
 					continue;
@@ -183,9 +183,9 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 
 			nodes[depth].index = 0;
 			if (c == '{')
-				nodes[depth]._type = TYPE_OBJECT;
+				nodes[depth].type = TYPE_OBJECT;
 			else
-				nodes[depth]._type = TYPE_ARRAY;
+				nodes[depth].type = TYPE_ARRAY;
 
 			cb(nodes, depth + 1, "");
 			v = 0;
@@ -193,14 +193,14 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 			depth++;
 			nodes[depth].index = 0;
 			nodes[depth].name[0] = '\0';
-			nodes[depth]._type = TYPE_PRIMITIVE;
+			nodes[depth].type = TYPE_PRIMITIVE;
 			break;
 		case ']':
 		case '}':
 		case ',':
 			if (v &&
-			    (nodes[depth]._type == TYPE_STRING ||
-			    nodes[depth]._type == TYPE_PRIMITIVE)) {
+			    (nodes[depth].type == TYPE_STRING ||
+			    nodes[depth].type == TYPE_PRIMITIVE)) {
 				value[v] = '\0';
 				cb(nodes, depth + 1, value);
 				v = 0;
@@ -212,7 +212,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 				nodes[--depth].index++;
 			} else if (c == ',') {
 				nodes[depth - 1].index++;
-				nodes[depth]._type = TYPE_PRIMITIVE;
+				nodes[depth].type = TYPE_PRIMITIVE;
 			}
 			break;
 		default:
@@ -252,12 +252,12 @@ processnode(struct json_node *nodes, size_t depth, const char *value)
 		printvalue(nodes[i].name);
 
 		if (i + 1 == depth &&
-		    (nodes[i]._type == TYPE_OBJECT || nodes[i]._type == TYPE_ARRAY))
+		    (nodes[i].type == TYPE_OBJECT || nodes[i].type == TYPE_ARRAY))
 			continue;
 
-		if (nodes[i]._type == TYPE_OBJECT) {
+		if (nodes[i].type == TYPE_OBJECT) {
 			putchar('.');
-		} else if (nodes[i]._type == TYPE_ARRAY) {
+		} else if (nodes[i].type == TYPE_ARRAY) {
 			if (showindices)
 				printf("[%zu]", nodes[i].index);
 			else
@@ -265,7 +265,7 @@ processnode(struct json_node *nodes, size_t depth, const char *value)
 		}
 	}
 
-	switch (nodes[depth - 1]._type) {
+	switch (nodes[depth - 1].type) {
 	case TYPE_UNKNOWN:   fatal("unknown type\n");  return;
 	case TYPE_ARRAY:     fputs("\ta\t\n", stdout); return;
 	case TYPE_OBJECT:    fputs("\to\t\n", stdout); return;
