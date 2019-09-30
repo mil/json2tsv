@@ -1,0 +1,36 @@
+.Dd October 1, 2019
+.Dt JSON2TSV 1
+.Os
+.Sh NAME
+.Nm json2tsv
+.Nd convert JSON to TSV
+.Sh SYNOPSIS
+.Nm
+.Op Fl n
+.Sh DESCRIPTION
+.Nm
+reads JSON data from stdin.
+It outputs each JSON type to a TAB-separated format per line.
+The
+.Fl n
+flag can be used to show the indices for array types (by default off).
+.Sh TAB-SEPARATED FORMAT
+The output format per line is:
+.Bd -literal
+nodename<TAB>type<TAB>value<LF>
+.Ed
+.Pp
+The nodename and value are escaped (\\n, \\t and \\\\).
+Control-characters are removed.
+.Pp
+The type can be: o (for object), a (for array), p (for primitive such as
+true, false, null, a number) or s (for string).
+.Sh SEE ALSO
+.Xr awk 1 ,
+.Xr grep 1
+.Sh AUTHORS
+.An Hiltjo Posthuma Aq Mt hiltjo@codemadness.org
+.Sh CAVEATS
+Characters in keys that have meaning in the first node field such as a dot or
+brackets are not changed.
+Keys in objects are limited to 256 bytes.

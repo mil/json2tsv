@@ -12,7 +12,7 @@ The type can be: o (object), a (array), p (primitive) or s (string).
 
 Then filtering is easy using some awk script on the node "selector".
 
-Example:
+Example to show posts of reddit.com:
 
 #!/bin/sh
 curl -s -H 'User-Agent:' 'https://old.reddit.com/.json' | \
@@ -27,7 +27,7 @@ function show() {
 		return;
 	print n ". " title " by " author " in r/" subreddit;
 	print url;
-	print "===";
+	print "";
 }
 $1 == ".data.children[].data" {
 	show();
