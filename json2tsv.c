@@ -116,7 +116,8 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 			if (v) {
 				value[v] = '\0';
 				/* NOTE: silent truncation for too long keys */
-				strlcpy(nodes[depth].name, value, sizeof(nodes[depth].name));
+				snprintf(nodes[depth].name, sizeof(nodes[depth].name),
+				         "%s", value);
 				v = 0;
 			}
 			nodes[depth].type = TYPE_PRIMITIVE;
