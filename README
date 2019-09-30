@@ -14,32 +14,30 @@ Then filtering is easy using some awk script on the node "selector".
 
 Example:
 
-curl -s 'https://old.reddit.com/.json' | json2tsv -n | thisscript.sh
-
+#!/bin/sh
+curl -s -H 'User-Agent:' 'https://old.reddit.com/.json' | \
+json2tsv | \
 awk 'BEGIN {
 	FS = OFS = "\t";
 	n = 0;
-	title = "";
+	title = author = subreddit = "";
 }
 function show() {
 	if (length(title) == 0)
 		return;
-	print n ". " title;
+	print n ". " title " by " author " in r/" subreddit;
 	print url;
 	print "===";
 }
 $1 == ".data.children[].data" {
 	show();
 	n++;
-	title = "";
-	url = "";
+	title = url = author = subreddit = "";
 }
-$1 == ".data.children[].data.url" {
-	url = $3;
-}
-$1 == ".data.children[].data.title" {
-	title = $3;
-}
+$1 == ".data.children[].data.url" { url = $3; }
+$1 == ".data.children[].data.title" { title = $3; }
+$1 == ".data.children[].data.author" { author = $3; }
+$1 == ".data.children[].data.subreddit" { subreddit = $3; }
 END {
 	show();
 }'
