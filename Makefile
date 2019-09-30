@@ -19,12 +19,12 @@ all: ${BIN}
 
 ${BIN}: ${@:=.o}
 
-OBJ = ${SRC:.c=.o} ${COMPATOBJ}
+OBJ = ${SRC:.c=.o}
 
 ${OBJ}: config.mk
 
 .o:
-	${CC} ${JSON2TSV_LDFLAGS} -o $@ $< ${LIB}
+	${CC} ${JSON2TSV_LDFLAGS} -o $@ $<
 
 .c.o:
 	${CC} ${JSON2TSV_CFLAGS} ${JSON2TSV_CPPFLAGS} -o $@ -c $<
@@ -40,7 +40,7 @@ dist:
 	rm -rf "${NAME}-${VERSION}"
 
 clean:
-	rm -f ${BIN} ${OBJ} ${LIB}
+	rm -f ${BIN} ${OBJ}
 
 install: all
 	# installing executable files.

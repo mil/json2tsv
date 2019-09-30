@@ -3,7 +3,7 @@
 # paths
 PREFIX = /usr/local
 MANPREFIX = ${PREFIX}/man
-DOCPREFIX = ${PREFIX}/share/doc/sfeed
+DOCPREFIX = ${PREFIX}/share/doc/json2tsv
 
 # compiler and linker
 CC = cc
