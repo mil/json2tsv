@@ -28,7 +28,7 @@ struct json_node {
 	size_t index; /* count/index for TYPE_ARRAY and TYPE_OBJECT */
 };
 
-static int showindices = 1; /* -n flag: show indices count for arrays */
+static int showindices = 0; /* -n flag: show indices count for arrays */
 
 void
 fatal(const char *s)
@@ -283,7 +283,7 @@ main(int argc, char *argv[])
 		fatal("pledge stdio\n");
 
 	if (argc > 1 && argv[1][0] == '-' && argv[1][1] == 'n')
-		showindices = 0;
+		showindices = 1;
 
 	parsejson(processnode);
 
