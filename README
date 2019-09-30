@@ -1,18 +1,33 @@
-JSON to TAB-separated format
-----------------------------
+json2tsv - convert JSON to TSV
+------------------------------
 
-It outputs each JSON type per line as:
+json2tsv reads JSON data from stdin.  It outputs each JSON type to a TAB-
+separated format per line.  The -n flag can be used to show the indices for
+array types (by default off).
+
+
+TAB-separated format
+--------------------
+
+The output format per line is:
 
 	nodename<TAB>type<TAB>value<LF>
 
-The nodename and value are escaped (\n, \t and \\).
-Control-characters are removed.
-Keys in objects are limited to 256 bytes.
-The type can be: o (object), a (array), p (primitive) or s (string).
+The nodename and value are escaped (\n, \t and \\).  Control-characters are
+removed.
+
+The type can be: o (for object), a (for array), p (for primitive such as true,
+false, null, a number) or s (for string).
 
 Then filtering is easy using some awk script on the node "selector".
 
-Example to show posts of reddit.com:
+
+Example
+-------
+
+An usage example to parse JSON posts of reddit.com and format them to a
+plain-text list using awk:
+
 
 #!/bin/sh
 curl -s -H 'User-Agent:' 'https://old.reddit.com/.json' | \
@@ -41,6 +56,14 @@ $1 == ".data.children[].data.subreddit" { subreddit = $3; }
 END {
 	show();
 }'
+
+
+Caveats
+-------
+
+- Characters in keys that have meaning in the first node field such as a dot or
+  brackets are not changed.
+- Keys in objects are limited to 256 bytes.
 
 
 License
