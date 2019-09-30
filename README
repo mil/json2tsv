@@ -1,0 +1,51 @@
+JSON to TAB-separated format
+----------------------------
+
+It outputs each JSON type per line as:
+
+	nodename<TAB>type<TAB>value<LF>
+
+The nodename and value are escaped (\n, \t and \\).
+Control-characters are removed.
+Keys in objects are limited to 256 bytes.
+The type can be: o (object), a (array), p (primitive) or s (string).
+
+Then filtering is easy using some awk script on the node "selector".
+
+Example:
+
+curl -s 'https://old.reddit.com/.json' | json2tsv -n | thisscript.sh
+
+awk 'BEGIN {
+	FS = OFS = "\t";
+	n = 0;
+	title = "";
+}
+function show() {
+	if (length(title) == 0)
+		return;
+	print n ". " title;
+	print url;
+	print "===";
+}
+$1 == ".data.children[].data" {
+	show();
+	n++;
+	title = "";
+	url = "";
+}
+$1 == ".data.children[].data.url" {
+	url = $3;
+}
+$1 == ".data.children[].data.title" {
+	title = $3;
+}
+END {
+	show();
+}'
+
+
+License
+-------
+
+ISC, see LICENSE file.
