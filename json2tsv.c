@@ -20,10 +20,11 @@ enum JSONType {
 	TYPE_OBJECT
 };
 
-#define JSON_MAX_NODE_DEPTH 64
+#define JSON_MAX_NODE_DEPTH 32
 
 struct json_node {
-	char name[256]; /* fixed size, too long keys will be truncated */
+	char *name;
+	size_t namesiz;
 	enum JSONType type;
 	size_t index; /* count/index for TYPE_ARRAY and TYPE_OBJECT */
 };
@@ -107,6 +108,9 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 	int c, escape;
 	char *value = NULL;
 
+	capacity(&(nodes[0].name), &(nodes[0].namesiz), 0, 1);
+	nodes[0].name[0] = '\0';
+
 	while ((c = GETNEXT()) != EOF) {
 		if (isspace(c) || iscntrl(c))
 			continue;
@@ -115,9 +119,9 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 		case ':':
 			if (v) {
 				value[v] = '\0';
-				/* NOTE: silent truncation for too long keys */
-				snprintf(nodes[depth].name, sizeof(nodes[depth].name),
-				         "%s", value);
+				capacity(&(nodes[depth].name), &(nodes[depth].namesiz), v, 1);
+				memcpy(nodes[depth].name, value, v);
+				nodes[depth].name[v] = '\0';
 				v = 0;
 			}
 			nodes[depth].type = TYPE_PRIMITIVE;
@@ -193,6 +197,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 
 			depth++;
 			nodes[depth].index = 0;
+			capacity(&(nodes[depth].name), &(nodes[depth].namesiz), v, 1);
 			nodes[depth].name[0] = '\0';
 			nodes[depth].type = TYPE_PRIMITIVE;
 			break;
