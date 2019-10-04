@@ -228,6 +228,9 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 			}
 		}
 	}
+
+	for (depth = 0; depth < sizeof(nodes) / sizeof(nodes[0]); depth++)
+		free(nodes[depth].name);
 	free(value);
 }
 
