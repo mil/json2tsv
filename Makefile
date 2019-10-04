@@ -1,16 +1,16 @@
 .POSIX:
 
-include config.mk
-
 NAME = json2tsv
 VERSION = 0.1
 
-BIN = json2tsv
+# paths
+PREFIX = /usr/local
+MANPREFIX = ${PREFIX}/man
+DOCPREFIX = ${PREFIX}/share/doc/${NAME}
 
+BIN = ${NAME}
 SRC = ${BIN:=.c}
-
 MAN1 = ${BIN:=.1}
-
 DOC = \
 	LICENSE\
 	README
@@ -21,22 +21,18 @@ ${BIN}: ${@:=.o}
 
 OBJ = ${SRC:.c=.o}
 
-${OBJ}: config.mk
-
 .o:
-	${CC} ${JSON2TSV_LDFLAGS} -o $@ $<
+	${CC} ${LDFLAGS} -o $@ $<
 
 .c.o:
-	${CC} ${JSON2TSV_CFLAGS} ${JSON2TSV_CPPFLAGS} -o $@ -c $<
+	${CC} ${CFLAGS} ${CPPFLAGS} -o $@ -c $<
 
 dist:
 	rm -rf "${NAME}-${VERSION}"
 	mkdir -p "${NAME}-${VERSION}"
-	cp -f ${MAN1} ${DOC} ${SRC} Makefile config.mk \
-		"${NAME}-${VERSION}"
+	cp -f ${MAN1} ${DOC} ${SRC} Makefile "${NAME}-${VERSION}"
 	# make tarball
-	tar -cf - "${NAME}-${VERSION}" | \
-		gzip -c > "${NAME}-${VERSION}.tar.gz"
+	tar -cf - "${NAME}-${VERSION}" | gzip -c > "${NAME}-${VERSION}.tar.gz"
 	rm -rf "${NAME}-${VERSION}"
 
 clean:
@@ -59,8 +55,7 @@ uninstall:
 	# removing executable files.
 	for f in ${BIN}; do rm -f "${DESTDIR}${PREFIX}/bin/$$f"; done
 	# removing example files.
-	rm -f \
-		"${DESTDIR}${DOCPREFIX}/README"
+	rm -f "${DESTDIR}${DOCPREFIX}/README"
 	-rmdir "${DESTDIR}${DOCPREFIX}"
 	# removing manual pages.
 	for m in ${MAN1}; do rm -f "${DESTDIR}${MANPREFIX}/man1/$$m"; done
