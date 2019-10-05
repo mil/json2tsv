@@ -223,10 +223,8 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 			}
 			break;
 		default:
-			if (!iscntrl(c)) {
-				capacity(&value, &vz, v, 2);
-				value[v++] = c;
-			}
+			capacity(&value, &vz, v, 2);
+			value[v++] = c;
 		}
 	}
 
