@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,13 +31,6 @@ struct json_node {
 };
 
 static int showindices = 0; /* -n flag: show indices count for arrays */
-
-void
-fatal(const char *s)
-{
-	fputs(s, stderr);
-	exit(1);
-}
 
 int
 codepointtoutf8(long r, char *s)
@@ -80,35 +74,42 @@ hexdigit(int c)
 	return 0;
 }
 
-void
+int
 capacity(char **value, size_t *sz, size_t cur, size_t inc)
 {
 	size_t need, newsiz;
+	char *newp;
 
 	/* check addition overflow */
 	need = cur + inc;
-	if (cur > SIZE_MAX - need || *sz > SIZE_MAX - 16384)
-		fatal("overflow\n");
+	if (cur > SIZE_MAX - need || *sz > SIZE_MAX - 16384) {
+		errno = EOVERFLOW;
+		return -1;
+	}
 
 	if (*sz == 0 || need > *sz) {
 		for (newsiz = *sz; newsiz < need; newsiz += 16384)
 			;
-		if (!(*value = realloc(*value, newsiz)))
-			fatal("realloc\n");
+		if (!(newp = realloc(*value, newsiz)))
+			return -1; /* up to caller to free memory */
+		*value = newp;
 		*sz = newsiz;
 	}
+	return 0;
 }
 
-void
-parsejson(void (*cb)(struct json_node *, size_t, const char *))
+int
+parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **errstr)
 {
 	struct json_node nodes[JSON_MAX_NODE_DEPTH] = { 0 };
-	long cp;
 	size_t depth = 0, v = 0, vz = 0;
-	int c, escape;
+	long cp;
+	int c, i, escape, ret = -1;
 	char *value = NULL;
 
-	capacity(&(nodes[0].name), &(nodes[0].namesiz), 0, 1);
+	*errstr = "cannot allocate enough memory";
+	if (capacity(&(nodes[0].name), &(nodes[0].namesiz), 0, 1) == -1)
+		goto end;
 	nodes[0].name[0] = '\0';
 
 	while ((c = GETNEXT()) != EOF) {
@@ -120,10 +121,13 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 		case ':':
 			nodes[depth].type = TYPE_PRIMITIVE;
 			if (v) {
-				if (!depth || nodes[depth - 1].type != TYPE_OBJECT)
-					fatal("object member, but not in an object\n");
+				if (!depth || nodes[depth - 1].type != TYPE_OBJECT) {
+					*errstr = "object member, but not in an object";
+					goto end;
+				}
 				value[v] = '\0';
-				capacity(&(nodes[depth].name), &(nodes[depth].namesiz), v, 1);
+				if (capacity(&(nodes[depth].name), &(nodes[depth].namesiz), v, 1) == -1)
+					goto end;
 				memcpy(nodes[depth].name, value, v);
 				nodes[depth].name[v] = '\0';
 				v = 0;
@@ -149,43 +153,43 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 					case 'r': c = '\r'; break;
 					case 't': c = '\t'; break;
 					case 'u': /* hex hex hex hex */
-						if ((c = GETNEXT()) == EOF || !isxdigit(c))
-							fatal("invalid codepoint\n");
-						cp = (hexdigit(c) << 12);
-						if ((c = GETNEXT()) == EOF || !isxdigit(c))
-							fatal("invalid codepoint\n");
-						cp |= (hexdigit(c) << 8);
-						if ((c = GETNEXT()) == EOF || !isxdigit(c))
-							fatal("invalid codepoint\n");
-						cp |= (hexdigit(c) << 4);
-						if ((c = GETNEXT()) == EOF || !isxdigit(c))
-							fatal("invalid codepoint\n");
-						cp |= (hexdigit(c));
-
-						capacity(&value, &vz, v, 5);
+						for (i = 12, cp = 0; i >= 0; i -= 4) {
+							if ((c = GETNEXT()) == EOF || !isxdigit(c)) {
+								*errstr = "invalid codepoint";
+								goto end;
+							}
+							cp |= (hexdigit(c) << i);
+						}
+						if (capacity(&value, &vz, v, 5) == -1)
+							goto end;
 						v += codepointtoutf8(cp, &value[v]);
 						continue;
 					default:
 						continue; /* ignore unknown escape char */
 					}
-					capacity(&value, &vz, v, 2);
+					if (capacity(&value, &vz, v, 2) == -1)
+						goto end;
 					value[v++] = c;
 				} else if (c == '\\') {
 					escape = 1;
 				} else if (c == '"') {
 					break;
 				} else {
-					capacity(&value, &vz, v, 2);
+					if (capacity(&value, &vz, v, 2) == -1)
+						goto end;
 					value[v++] = c;
 				}
 			}
-			capacity(&value, &vz, v, 1);
+			if (capacity(&value, &vz, v, 1) == -1)
+				goto end;
 			value[v] = '\0';
 			break;
 		case '[':
 		case '{':
-			if (depth + 1 >= JSON_MAX_NODE_DEPTH)
-				fatal("max depth reached\n");
+			if (depth + 1 >= JSON_MAX_NODE_DEPTH) {
+				*errstr = "max node depth reached";
+				goto end;
+			}
 
 			nodes[depth].index = 0;
 			nodes[depth].type = c == '{' ? TYPE_OBJECT : TYPE_ARRAY;
@@ -195,7 +199,8 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 
 			depth++;
 			nodes[depth].index = 0;
-			capacity(&(nodes[depth].name), &(nodes[depth].namesiz), v, 1);
+			if (capacity(&(nodes[depth].name), &(nodes[depth].namesiz), v, 1) == -1)
+				goto end;
 			nodes[depth].name[0] = '\0';
 			nodes[depth].type = TYPE_PRIMITIVE;
 			break;
@@ -211,8 +216,10 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 			}
 			if (!depth ||
 			    (nodes[depth - 1].type == TYPE_OBJECT && c == ']') ||
-			    (nodes[depth - 1].type == TYPE_ARRAY && c == '}'))
-				fatal("unbalanced nodes\n");
+			    (nodes[depth - 1].type == TYPE_ARRAY && c == '}')) {
+				*errstr = "unbalanced nodes";
+				goto end;
+			}
 
 			if (c == ']' || c == '}') {
 				nodes[--depth].index++;
@@ -222,14 +229,20 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 			}
 			break;
 		default:
-			capacity(&value, &vz, v, 2);
+			if (capacity(&value, &vz, v, 2) == -1)
+				goto end;
 			value[v++] = c;
 		}
 	}
 
+	ret = 0; /* success */
+	*errstr = NULL;
+end:
 	for (depth = 0; depth < sizeof(nodes) / sizeof(nodes[0]); depth++)
 		free(nodes[depth].name);
 	free(value);
+
+	return ret;
 }
 
 void
@@ -273,7 +286,7 @@ processnode(struct json_node *nodes, size_t depth, const char *value)
 	}
 
 	switch (nodes[depth - 1].type) {
-	case TYPE_UNKNOWN:   fatal("unknown type\n");  return;
+	case TYPE_UNKNOWN:   return;
 	case TYPE_ARRAY:     fputs("\ta\t\n", stdout); return;
 	case TYPE_OBJECT:    fputs("\to\t\n", stdout); return;
 	case TYPE_PRIMITIVE: fputs("\tp\t",   stdout); break;
@@ -286,13 +299,20 @@ processnode(struct json_node *nodes, size_t depth, const char *value)
 int
 main(int argc, char *argv[])
 {
-	if (pledge("stdio", NULL) == -1)
-		fatal("pledge stdio\n");
+	const char *errstr;
+
+	if (pledge("stdio", NULL) == -1) {
+		fprintf(stderr, "pledge stdio: %s\n", strerror(errno));
+		return 1;
+	}
 
 	if (argc > 1 && argv[1][0] == '-' && argv[1][1] == 'n')
 		showindices = 1;
 
-	parsejson(processnode);
+	if (parsejson(processnode, &errstr) == -1) {
+		fprintf(stderr, "error: %s\n", errstr);
+		return 1;
+	}
 
 	return 0;
 }
