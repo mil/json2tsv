@@ -135,9 +135,10 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 
 				if (escape) {
 					escape = 0;
+
 					switch (c) {
-					case '"':
-					case '\'':
+					case '"': /* FALLTHROUGH */
+					case '\\':
 					case '/': break;
 					case 'b': c = '\b'; break;
 					case 'f': c = '\f'; break;
