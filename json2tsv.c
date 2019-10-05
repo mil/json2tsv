@@ -88,13 +88,13 @@ capacity(char **value, size_t *sz, size_t cur, size_t inc)
 	/* check addition overflow */
 	need = cur + inc;
 	if (cur > SIZE_MAX - need || *sz > SIZE_MAX - 16384)
-		fatal("overflow");
+		fatal("overflow\n");
 
 	if (*sz == 0 || need > *sz) {
 		for (newsiz = *sz; newsiz < need; newsiz += 16384)
 			;
 		if (!(*value = realloc(*value, newsiz)))
-			fatal("realloc");
+			fatal("realloc\n");
 		*sz = newsiz;
 	}
 }
@@ -119,6 +119,8 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 		case ':':
 			nodes[depth].type = TYPE_PRIMITIVE;
 			if (v) {
+				if (!depth || nodes[depth - 1].type != TYPE_OBJECT)
+					fatal("object member, but not in an object\n");
 				value[v] = '\0';
 				capacity(&(nodes[depth].name), &(nodes[depth].namesiz), v, 1);
 				memcpy(nodes[depth].name, value, v);
