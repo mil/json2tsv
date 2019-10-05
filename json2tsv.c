@@ -212,7 +212,9 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 				cb(nodes, depth + 1, value);
 				v = 0;
 			}
-			if (!depth)
+			if (!depth ||
+			    (nodes[depth - 1].type == TYPE_OBJECT && c == ']') ||
+			    (nodes[depth - 1].type == TYPE_ARRAY && c == '}'))
 				fatal("unbalanced nodes\n");
 
 			if (c == ']' || c == '}') {
