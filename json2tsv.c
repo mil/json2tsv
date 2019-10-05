@@ -112,7 +112,8 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 	nodes[0].name[0] = '\0';
 
 	while ((c = GETNEXT()) != EOF) {
-		if (isspace(c) || iscntrl(c))
+		/* not whitespace or control-character */
+		if (c <= 0x20 || c == 0x7f)
 			continue;
 
 		switch (c) {
