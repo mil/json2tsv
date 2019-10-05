@@ -117,6 +117,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 
 		switch (c) {
 		case ':':
+			nodes[depth].type = TYPE_PRIMITIVE;
 			if (v) {
 				value[v] = '\0';
 				capacity(&(nodes[depth].name), &(nodes[depth].namesiz), v, 1);
@@ -124,7 +125,6 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 				nodes[depth].name[v] = '\0';
 				v = 0;
 			}
-			nodes[depth].type = TYPE_PRIMITIVE;
 			break;
 		case '"':
 			v = 0;
@@ -146,8 +146,6 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 					case 'r': c = '\r'; break;
 					case 't': c = '\t'; break;
 					case 'u': /* hex hex hex hex */
-						capacity(&value, &vz, v, 5);
-
 						if ((c = GETNEXT()) == EOF || !isxdigit(c))
 							fatal("invalid codepoint\n");
 						cp = (hexdigit(c) << 12);
@@ -161,23 +159,22 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 							fatal("invalid codepoint\n");
 						cp |= (hexdigit(c));
 
-						v += codepointtoutf8(cp, value + v);
+						capacity(&value, &vz, v, 5);
+						v += codepointtoutf8(cp, &value[v]);
 						continue;
 					default:
-						/* ignore */
-						continue;
+						continue; /* ignore unknown escape char */
 					}
 					capacity(&value, &vz, v, 2);
 					value[v++] = c;
-					continue;
 				} else if (c == '\\') {
 					escape = 1;
-					continue;
 				} else if (c == '"') {
 					break;
+				} else {
+					capacity(&value, &vz, v, 2);
+					value[v++] = c;
 				}
-				capacity(&value, &vz, v, 2);
-				value[v++] = c;
 			}
 			capacity(&value, &vz, v, 1);
 			value[v] = '\0';
@@ -188,10 +185,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *))
 				fatal("max depth reached\n");
 
 			nodes[depth].index = 0;
-			if (c == '{')
-				nodes[depth].type = TYPE_OBJECT;
-			else
-				nodes[depth].type = TYPE_ARRAY;
+			nodes[depth].type = c == '{' ? TYPE_OBJECT : TYPE_ARRAY;
 
 			cb(nodes, depth + 1, "");
 			v = 0;
