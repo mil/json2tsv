@@ -24,9 +24,9 @@ enum JSONType {
 #define JSON_MAX_NODE_DEPTH 32
 
 struct json_node {
+	enum JSONType type;
 	char *name;
 	size_t namesiz;
-	enum JSONType type;
 	size_t index; /* count/index for TYPE_ARRAY and TYPE_OBJECT */
 };
 
@@ -251,9 +251,9 @@ printvalue(const char *s)
 	for (; *s; s++) {
 		/* escape some chars */
 		switch (*s) {
-		case '\n': fputs("\\n",  stdout); break;
-		case '\\': fputs("\\\\", stdout); break;
-		case '\t': fputs("\\t",  stdout); break;
+		case '\n': putchar('\\'); putchar('n'); break;
+		case '\\': putchar('\\'); putchar('\\'); break;
+		case '\t': putchar('\\'); putchar('t'); break;
 		default:
 			/* ignore other control chars */
 			if (iscntrl((unsigned char)*s))
@@ -278,20 +278,24 @@ processnode(struct json_node *nodes, size_t depth, const char *value)
 		if (nodes[i].type == TYPE_OBJECT) {
 			putchar('.');
 		} else if (nodes[i].type == TYPE_ARRAY) {
-			if (showindices)
+			if (showindices) {
 				printf("[%zu]", nodes[i].index);
-			else
-				fputs("[]", stdout);
+			} else {
+				putchar('[');
+				putchar(']');
+			}
 		}
 	}
 
+	putchar('\t');
 	switch (nodes[depth - 1].type) {
 	case TYPE_UNKNOWN:   return;
-	case TYPE_ARRAY:     fputs("\ta\t\n", stdout); return;
-	case TYPE_OBJECT:    fputs("\to\t\n", stdout); return;
-	case TYPE_PRIMITIVE: fputs("\tp\t",   stdout); break;
-	case TYPE_STRING:    fputs("\ts\t",   stdout); break;
+	case TYPE_ARRAY:     putchar('a'); break;
+	case TYPE_OBJECT:    putchar('o'); break;
+	case TYPE_PRIMITIVE: putchar('p'); break;
+	case TYPE_STRING:    putchar('s'); break;
 	}
+	putchar('\t');
 	printvalue(value);
 	putchar('\n');
 }
