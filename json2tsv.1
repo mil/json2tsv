@@ -1,4 +1,4 @@
-.Dd October 1, 2019
+.Dd October 6, 2019
 .Dt JSON2TSV 1
 .Os
 .Sh NAME
@@ -31,6 +31,13 @@ true, false, null, a number) or s (for string).
 .Sh AUTHORS
 .An Hiltjo Posthuma Aq Mt hiltjo@codemadness.org
 .Sh CAVEATS
-Characters in keys that have meaning in the first node field such as a dot or
-brackets are not changed.
+.Bl -item
+.It
+Characters in object keys such as a dot or brackets are not changed, this
+can change the meaning of the nodename field.
+.It
+The JSON parser handles all valid JSON.
+It also handles some invalid JSON like object key strings without quoting (").
+.It
 The maximum depth of objects or arrays is hard-coded to 32 levels deep.
+.El
