@@ -81,17 +81,21 @@ capacity(char **value, size_t *sz, size_t cur, size_t inc)
 	char *newp;
 
 	/* check addition overflow */
-	need = cur + inc;
-	if (cur > SIZE_MAX - need || *sz > SIZE_MAX - 16384) {
+	if (cur > SIZE_MAX - inc) {
 		errno = EOVERFLOW;
 		return -1;
 	}
+	need = cur + inc;
 
-	if (*sz == 0 || need > *sz) {
-		for (newsiz = *sz; newsiz < need; newsiz += 16384)
-			;
+	if (need > *sz) {
+		if (need > SIZE_MAX - 16384) {
+			newsiz = SIZE_MAX;
+		} else {
+			for (newsiz = *sz; newsiz < need; newsiz += 16384)
+				;
+		}
 		if (!(newp = realloc(*value, newsiz)))
-			return -1; /* up to caller to free memory */
+			return -1; /* up to caller to free *value */
 		*value = newp;
 		*sz = newsiz;
 	}
