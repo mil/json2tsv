@@ -185,7 +185,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 								*errstr = "invalid codepoint";
 								goto end;
 							}
-							cp = (hi << 10) + (0xDC00 + (lo & 0x3FF)) - 56613888;
+							cp = (hi << 10) + lo - 56613888; /* - offset */
 						}
 						if (capacity(&value, &vz, v, 5) == -1)
 							goto end;
