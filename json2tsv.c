@@ -107,7 +107,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 {
 	struct json_node nodes[JSON_MAX_NODE_DEPTH] = { 0 };
 	size_t depth = 0, v = 0, vz = 0;
-	long cp;
+	long cp, hi, lo;
 	int c, i, escape, ret = -1;
 	char *value = NULL;
 
@@ -163,6 +163,29 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 								goto end;
 							}
 							cp |= (hexdigit(c) << i);
+						}
+						/* See also:
+						 * RFC7159 - 7. Strings and
+						 * https://unicode.org/faq/utf_bom.html#utf8-4
+						 * 0xd800 - 0xdb7f - high surrogates (no private use range) */
+						if (cp >= 0xd800 && cp <= 0xdb7f) {
+							if (GETNEXT() != '\\' || GETNEXT() != 'u') {
+								*errstr = "invalid codepoint";
+								goto end;
+							}
+							for (hi = cp, i = 12, lo = 0; i >= 0; i -= 4) {
+								if ((c = GETNEXT()) == EOF || !isxdigit(c)) {
+									*errstr = "invalid codepoint";
+									goto end;
+								}
+								lo |= (hexdigit(c) << i);
+							}
+							/* 0xdc00 - 0xdfff - low surrogates: must follow after high surrogate */
+							if (!(lo >= 0xdc00 && lo <= 0xdfff)) {
+								*errstr = "invalid codepoint";
+								goto end;
+							}
+							cp = (hi << 10) + (0xDC00 + (lo & 0x3FF)) - 56613888;
 						}
 						if (capacity(&value, &vz, v, 5) == -1)
 							goto end;
