@@ -2,12 +2,12 @@ json2tsv - convert JSON to TSV
 ------------------------------
 
 json2tsv reads JSON data from stdin.  It outputs each JSON type to a TAB-
-separated format per line.  The -n flag can be used to show the indices for
-array types (by default off).
+Separated Value format per line.  The -n flag can be used to show the indices
+for array types (by default off).
 
 
-TAB-separated format
---------------------
+TAB-Separated Value format
+--------------------------
 
 The output format per line is:
 
