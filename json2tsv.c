@@ -122,12 +122,11 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 
 		switch (c) {
 		case ':':
-			nodes[depth].type = TYPE_PRIMITIVE;
-			if (v) {
-				if (!depth || nodes[depth - 1].type != TYPE_OBJECT) {
-					*errstr = "object member, but not in an object";
-					goto end;
-				}
+			if (!depth || nodes[depth - 1].type != TYPE_OBJECT) {
+				*errstr = "object member, but not in an object";
+				goto end;
+			}
+			if (v || nodes[depth].type == TYPE_STRING) {
 				value[v] = '\0';
 				if (capacity(&(nodes[depth].name), &(nodes[depth].namesiz), v, 1) == -1)
 					goto end;
@@ -135,6 +134,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 				nodes[depth].name[v] = '\0';
 				v = 0;
 			}
+			nodes[depth].type = TYPE_PRIMITIVE;
 			break;
 		case '"':
 			v = 0;
