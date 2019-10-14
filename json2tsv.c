@@ -88,10 +88,10 @@ capacity(char **value, size_t *sz, size_t cur, size_t inc)
 	need = cur + inc;
 
 	if (need > *sz) {
-		if (need > SIZE_MAX - 16384) {
+		if (need > SIZE_MAX - 4096) {
 			newsiz = SIZE_MAX;
 		} else {
-			for (newsiz = *sz; newsiz < need; newsiz += 16384)
+			for (newsiz = *sz; newsiz < need; newsiz += 4096)
 				;
 		}
 		if (!(newp = realloc(*value, newsiz)))
