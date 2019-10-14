@@ -235,6 +235,8 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 		case '}':
 		case ',':
 			if (v || nodes[depth].type == TYPE_STRING) {
+				if (capacity(&value, &vz, v, 1) == -1)
+					goto end;
 				value[v] = '\0';
 				cb(nodes, depth + 1, value);
 				v = 0;
