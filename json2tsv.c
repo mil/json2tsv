@@ -126,14 +126,15 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 				*errstr = "object member, but not in an object";
 				goto end;
 			}
-			if (v || nodes[depth].type == TYPE_STRING) {
-				value[v] = '\0';
-				if (capacity(&(nodes[depth].name), &(nodes[depth].namesiz), v, 1) == -1)
-					goto end;
-				memcpy(nodes[depth].name, value, v);
-				nodes[depth].name[v] = '\0';
-				v = 0;
-			}
+
+			if (capacity(&value, &vz, v, 1) == -1)
+				goto end;
+			value[v] = '\0';
+			if (capacity(&(nodes[depth].name), &(nodes[depth].namesiz), v, 1) == -1)
+				goto end;
+			memcpy(nodes[depth].name, value, v);
+			nodes[depth].name[v] = '\0';
+			v = 0;
 			nodes[depth].type = TYPE_PRIMITIVE;
 			break;
 		case '"':
@@ -186,14 +187,14 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 							}
 							cp = (hi << 10) + lo - 56613888; /* - offset */
 						}
-						if (capacity(&value, &vz, v, 5) == -1)
+						if (capacity(&value, &vz, v, 4) == -1)
 							goto end;
 						v += codepointtoutf8(cp, &value[v]);
 						continue;
 					default:
 						continue; /* ignore unknown escape char */
 					}
-					if (capacity(&value, &vz, v, 2) == -1)
+					if (capacity(&value, &vz, v, 1) == -1)
 						goto end;
 					value[v++] = c;
 				} else if (c == '\\') {
@@ -201,7 +202,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 				} else if (c == '"') {
 					break;
 				} else {
-					if (capacity(&value, &vz, v, 2) == -1)
+					if (capacity(&value, &vz, v, 1) == -1)
 						goto end;
 					value[v++] = c;
 				}
@@ -253,7 +254,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 			}
 			break;
 		default:
-			if (capacity(&value, &vz, v, 2) == -1)
+			if (capacity(&value, &vz, v, 1) == -1)
 				goto end;
 			value[v++] = c;
 		}
