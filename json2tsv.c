@@ -14,11 +14,10 @@
 #define GETNEXT getchar
 
 enum JSONType {
-	TYPE_UNKNOWN = 0,
-	TYPE_PRIMITIVE,
-	TYPE_STRING,
-	TYPE_ARRAY,
-	TYPE_OBJECT
+	TYPE_PRIMITIVE = 'p',
+	TYPE_STRING    = 's',
+	TYPE_ARRAY     = 'a',
+	TYPE_OBJECT    = 'o'
 };
 
 #define JSON_MAX_NODE_DEPTH 32
@@ -315,13 +314,7 @@ processnode(struct json_node *nodes, size_t depth, const char *value)
 	}
 
 	putchar('\t');
-	switch (nodes[depth - 1].type) {
-	case TYPE_UNKNOWN:   return;
-	case TYPE_ARRAY:     putchar('a'); break;
-	case TYPE_OBJECT:    putchar('o'); break;
-	case TYPE_PRIMITIVE: putchar('p'); break;
-	case TYPE_STRING:    putchar('s'); break;
-	}
+	putchar(nodes[depth - 1].type);
 	putchar('\t');
 	printvalue(value);
 	putchar('\n');
