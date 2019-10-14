@@ -260,6 +260,10 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 			value[v++] = c;
 		}
 	}
+	if (depth) {
+		*errstr = "unbalanced nodes";
+		goto end;
+	}
 
 	ret = 0; /* success */
 	*errstr = NULL;
