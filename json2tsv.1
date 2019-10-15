@@ -1,4 +1,4 @@
-.Dd October 13, 2019
+.Dd October 15, 2019
 .Dt JSON2TSV 1
 .Os
 .Sh NAME
@@ -20,11 +20,12 @@ The output format per line is:
 nodename<TAB>type<TAB>value<LF>
 .Ed
 .Pp
-The nodename and value are escaped (\\n, \\t and \\\\).
-Control-characters are removed.
+Control-characters such as a newline, TAB and backslash (\\n, \\t and \\\\) are
+escaped in the nodename and value fields.
+Other control-characters are removed.
 .Pp
-The type can be: o (for object), a (for array), p (for primitive such as
-true, false, null, a number) or s (for string).
+The type field is a single byte and can be: a (for array), o (for object), p
+(for primitive such as true, false, null, a number) or s (for string).
 .Sh SEE ALSO
 .Xr awk 1 ,
 .Xr grep 1
