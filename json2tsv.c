@@ -29,6 +29,15 @@ struct json_node {
 	size_t index; /* count/index for TYPE_ARRAY and TYPE_OBJECT */
 };
 
+const char *JSON_ERROR_ALLOC         = "cannot allocate enough memory";
+const char *JSON_ERROR_BALANCE       = "unbalanced nodes";
+const char *JSON_ERROR_CODEPOINT     = "invalid codepoint";
+const char *JSON_ERROR_DEPTH         = "max node depth reached";
+const char *JSON_ERROR_ESCAPE_CHAR   = "unknown escape character in string";
+const char *JSON_ERROR_INVALID_CHAR  = "invalid character in string";
+const char *JSON_ERROR_MEMBER        = "member, but not in an object/array";
+const char *JSON_ERROR_OBJECT_MEMBER = "object member, but not in an object";
+
 static int showindices = 0; /* -n flag: show indices count for arrays */
 
 int
@@ -110,7 +119,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 	int c, i, escape, ret = -1;
 	char *value = NULL;
 
-	*errstr = "cannot allocate enough memory";
+	*errstr = JSON_ERROR_ALLOC;
 	if (capacity(&(nodes[0].name), &(nodes[0].namesiz), 0, 1) == -1)
 		goto end;
 	nodes[0].name[0] = '\0';
@@ -123,7 +132,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 		switch (c) {
 		case ':':
 			if (!depth || nodes[depth - 1].type != TYPE_OBJECT) {
-				*errstr = "object member, but not in an object";
+				*errstr = JSON_ERROR_OBJECT_MEMBER;
 				goto end;
 			}
 
@@ -159,7 +168,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 					case 'u': /* hex hex hex hex */
 						for (i = 12, cp = 0; i >= 0; i -= 4) {
 							if ((c = GETNEXT()) == EOF || !isxdigit(c)) {
-								*errstr = "invalid codepoint";
+								*errstr = JSON_ERROR_CODEPOINT;
 								goto end;
 							}
 							cp |= (hexdigit(c) << i);
@@ -170,19 +179,19 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 						 * 0xd800 - 0xdb7f - high surrogates (no private use range) */
 						if (cp >= 0xd800 && cp <= 0xdb7f) {
 							if (GETNEXT() != '\\' || GETNEXT() != 'u') {
-								*errstr = "invalid codepoint";
+								*errstr = JSON_ERROR_CODEPOINT;
 								goto end;
 							}
 							for (hi = cp, i = 12, lo = 0; i >= 0; i -= 4) {
 								if ((c = GETNEXT()) == EOF || !isxdigit(c)) {
-									*errstr = "invalid codepoint";
+									*errstr = JSON_ERROR_CODEPOINT;
 									goto end;
 								}
 								lo |= (hexdigit(c) << i);
 							}
 							/* 0xdc00 - 0xdfff - low surrogates: must follow after high surrogate */
 							if (!(lo >= 0xdc00 && lo <= 0xdfff)) {
-								*errstr = "invalid codepoint";
+								*errstr = JSON_ERROR_CODEPOINT;
 								goto end;
 							}
 							cp = (hi << 10) + lo - 56613888; /* - offset */
@@ -214,7 +223,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 		case '[':
 		case '{':
 			if (depth + 1 >= JSON_MAX_NODE_DEPTH) {
-				*errstr = "max node depth reached";
+				*errstr = JSON_ERROR_DEPTH;
 				goto end;
 			}
 
@@ -244,7 +253,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 			if (!depth ||
 			    (c == ']' && nodes[depth - 1].type != TYPE_ARRAY) ||
 			    (c == '}' && nodes[depth - 1].type != TYPE_OBJECT)) {
-				*errstr = "unbalanced nodes";
+				*errstr = JSON_ERROR_BALANCE;
 				goto end;
 			}
 
@@ -262,7 +271,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 		}
 	}
 	if (depth) {
-		*errstr = "unbalanced nodes";
+		*errstr = JSON_ERROR_BALANCE;
 		goto end;
 	}
 
