@@ -147,7 +147,6 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 			nodes[depth].type = TYPE_PRIMITIVE;
 			break;
 		case '"':
-			v = 0;
 			nodes[depth].type = TYPE_STRING;
 			for (escape = 0; (c = GETNEXT()) != EOF;) {
 				/* 0x7f is not defined as a control-character in strings in the RFC */
