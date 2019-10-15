@@ -35,7 +35,6 @@ const char *JSON_ERROR_CODEPOINT     = "invalid codepoint";
 const char *JSON_ERROR_DEPTH         = "max node depth reached";
 const char *JSON_ERROR_ESCAPE_CHAR   = "unknown escape character in string";
 const char *JSON_ERROR_INVALID_CHAR  = "invalid character in string";
-const char *JSON_ERROR_MEMBER        = "member, but not in an object/array";
 const char *JSON_ERROR_OBJECT_MEMBER = "object member, but not in an object";
 
 static int showindices = 0; /* -n flag: show indices count for arrays */
@@ -265,12 +264,8 @@ escchr:
 				cb(nodes, depth + 1, value);
 				v = 0;
 			}
-			if (!depth) {
-				*errstr = JSON_ERROR_MEMBER;
-				goto end;
-			}
-
-			if ((c == ']' && nodes[depth - 1].type != TYPE_ARRAY) ||
+			if (!depth ||
+			    (c == ']' && nodes[depth - 1].type != TYPE_ARRAY) ||
 			    (c == '}' && nodes[depth - 1].type != TYPE_OBJECT)) {
 				*errstr = JSON_ERROR_BALANCE;
 				goto end;
