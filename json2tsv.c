@@ -123,6 +123,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 	if (capacity(&(nodes[0].name), &(nodes[0].namesiz), 0, 1) == -1)
 		goto end;
 	nodes[0].name[0] = '\0';
+	nodes[depth].type = TYPE_PRIMITIVE;
 
 	while ((c = GETNEXT()) != EOF) {
 		/* not whitespace or control-character */
@@ -273,6 +274,12 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 	if (depth) {
 		*errstr = JSON_ERROR_BALANCE;
 		goto end;
+	}
+	if (v || nodes[depth].type == TYPE_STRING) {
+		if (capacity(&value, &vz, v, 1) == -1)
+			goto end;
+		value[v] = '\0';
+		cb(nodes, depth + 1, value);
 	}
 
 	ret = 0; /* success */
