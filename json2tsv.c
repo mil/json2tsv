@@ -252,8 +252,12 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 				cb(nodes, depth + 1, value);
 				v = 0;
 			}
-			if (!depth ||
-			    (c == ']' && nodes[depth - 1].type != TYPE_ARRAY) ||
+			if (!depth) {
+				*errstr = JSON_ERROR_MEMBER;
+				goto end;
+			}
+
+			if ((c == ']' && nodes[depth - 1].type != TYPE_ARRAY) ||
 			    (c == '}' && nodes[depth - 1].type != TYPE_OBJECT)) {
 				*errstr = JSON_ERROR_BALANCE;
 				goto end;
