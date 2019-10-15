@@ -202,7 +202,8 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 						v += codepointtoutf8(cp, &value[v]);
 						continue;
 					default:
-						continue; /* ignore unknown escape char */
+						*errstr = JSON_ERROR_ESCAPE_CHAR;
+						goto end;
 					}
 					if (capacity(&value, &vz, v, 1) == -1)
 						goto end;
