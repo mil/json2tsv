@@ -87,7 +87,7 @@ capacity(char **value, size_t *sz, size_t cur, size_t inc)
 	size_t need, newsiz;
 	char *newp;
 
-	/* check addition overflow */
+	/* check for addition overflow */
 	if (cur > SIZE_MAX - inc) {
 		errno = EOVERFLOW;
 		return -1;
@@ -180,10 +180,8 @@ escchr:
 							}
 							cp |= (hexdigit(c) << i);
 						}
-						/* See also:
-						 * RFC8259 - 7. Strings and
-						 * https://unicode.org/faq/utf_bom.html#utf8-4
-						 * 0xd800 - 0xdb7f - high surrogates (no private use range) */
+						/* RFC8259 - 7. Strings - surrogates.
+						 * 0xd800 - 0xdb7f - high surrogates */
 						if (cp >= 0xd800 && cp <= 0xdb7f) {
 							if ((c = GETNEXT()) != '\\') {
 								v += codepointtoutf8(cp, &value[v]);
@@ -200,10 +198,11 @@ escchr:
 								}
 								lo |= (hexdigit(c) << i);
 							}
-							/* 0xdc00 - 0xdfff - low surrogates: must follow after high surrogate */
+							/* 0xdc00 - 0xdfff - low surrogates */
 							if (lo >= 0xdc00 && lo <= 0xdfff) {
 								cp = (hi << 10) + lo - 56613888; /* - offset */
 							} else {
+								/* handle graceful: raw invalid output bytes */
 								v += codepointtoutf8(hi, &value[v]);
 								if (capacity(&value, &vz, v, 4) == -1)
 									goto end;
@@ -249,10 +248,10 @@ escchr:
 
 			depth++;
 			nodes[depth].index = 0;
+			nodes[depth].type = TYPE_PRIMITIVE;
 			if (capacity(&(nodes[depth].name), &(nodes[depth].namesiz), v, 1) == -1)
 				goto end;
 			nodes[depth].name[0] = '\0';
-			nodes[depth].type = TYPE_PRIMITIVE;
 			break;
 		case ']':
 		case '}':
