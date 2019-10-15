@@ -26,7 +26,7 @@ struct json_node {
 	enum JSONType type;
 	char *name;
 	size_t namesiz;
-	size_t index; /* count/index for TYPE_ARRAY and TYPE_OBJECT */
+	size_t index; /* count/index for array or object type */
 };
 
 const char *JSON_ERROR_ALLOC         = "cannot allocate enough memory";
