@@ -20,7 +20,7 @@ enum JSONType {
 	TYPE_OBJECT    = 'o'
 };
 
-#define JSON_MAX_NODE_DEPTH 32
+#define JSON_MAX_NODE_DEPTH 64
 
 struct json_node {
 	enum JSONType type;
