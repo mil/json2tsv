@@ -126,7 +126,7 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 	nodes[depth].type = TYPE_PRIMITIVE;
 
 	while ((c = GETNEXT()) != EOF) {
-		/* not whitespace or control-character */
+		/* not whitespace or control character */
 		if (c <= 0x20 || c == 0x7f)
 			continue;
 
@@ -149,14 +149,19 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 			break;
 		case '"':
 			nodes[depth].type = TYPE_STRING;
-			for (escape = 0; (c = GETNEXT()) != EOF;) {
-				/* 0x7f is not defined as a control-character in strings in the RFC */
-				if (c < 0x20)
-					continue;
+			escape = 0;
+			for (;;) {
+				c = GETNEXT();
+chr:
+				if (c < 0x20) {
+					/* EOF or control char: 0x7f is not defined as a control char in RFC8259 */
+					*errstr = JSON_ERROR_INVALID_CHAR;
+					goto end;
+				}
 
 				if (escape) {
+escchr:
 					escape = 0;
-
 					switch (c) {
 					case '"': /* FALLTHROUGH */
 					case '\\':
@@ -167,6 +172,8 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 					case 'r': c = '\r'; break;
 					case 't': c = '\t'; break;
 					case 'u': /* hex hex hex hex */
+						if (capacity(&value, &vz, v, 4) == -1)
+							goto end;
 						for (i = 12, cp = 0; i >= 0; i -= 4) {
 							if ((c = GETNEXT()) == EOF || !isxdigit(c)) {
 								*errstr = JSON_ERROR_CODEPOINT;
@@ -175,13 +182,17 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 							cp |= (hexdigit(c) << i);
 						}
 						/* See also:
-						 * RFC7159 - 7. Strings and
+						 * RFC8259 - 7. Strings and
 						 * https://unicode.org/faq/utf_bom.html#utf8-4
 						 * 0xd800 - 0xdb7f - high surrogates (no private use range) */
 						if (cp >= 0xd800 && cp <= 0xdb7f) {
-							if (GETNEXT() != '\\' || GETNEXT() != 'u') {
-								*errstr = JSON_ERROR_CODEPOINT;
-								goto end;
+							if ((c = GETNEXT()) != '\\') {
+								v += codepointtoutf8(cp, &value[v]);
+								goto chr;
+							}
+							if ((c = GETNEXT()) != 'u') {
+								v += codepointtoutf8(cp, &value[v]);
+								goto escchr;
 							}
 							for (hi = cp, i = 12, lo = 0; i >= 0; i -= 4) {
 								if ((c = GETNEXT()) == EOF || !isxdigit(c)) {
@@ -191,14 +202,16 @@ parsejson(void (*cb)(struct json_node *, size_t, const char *), const char **err
 								lo |= (hexdigit(c) << i);
 							}
 							/* 0xdc00 - 0xdfff - low surrogates: must follow after high surrogate */
-							if (!(lo >= 0xdc00 && lo <= 0xdfff)) {
-								*errstr = JSON_ERROR_CODEPOINT;
-								goto end;
+							if (lo >= 0xdc00 && lo <= 0xdfff) {
+								cp = (hi << 10) + lo - 56613888; /* - offset */
+							} else {
+								v += codepointtoutf8(hi, &value[v]);
+								if (capacity(&value, &vz, v, 4) == -1)
+									goto end;
+								v += codepointtoutf8(lo, &value[v]);
+								continue;
 							}
-							cp = (hi << 10) + lo - 56613888; /* - offset */
 						}
-						if (capacity(&value, &vz, v, 4) == -1)
-							goto end;
 						v += codepointtoutf8(cp, &value[v]);
 						continue;
 					default:
