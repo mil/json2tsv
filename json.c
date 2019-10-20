@@ -9,7 +9,7 @@
 
 #include "json.h"
 
-int
+static int
 codepointtoutf8(long r, char *s)
 {
 	if (r == 0) {
@@ -39,7 +39,7 @@ codepointtoutf8(long r, char *s)
 	}
 }
 
-int
+static int
 hexdigit(int c)
 {
 	if (c >= '0' && c <= '9')
@@ -51,7 +51,7 @@ hexdigit(int c)
 	return 0;
 }
 
-int
+static int
 capacity(char **value, size_t *sz, size_t cur, size_t inc)
 {
 	size_t need, newsiz;
