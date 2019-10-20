@@ -16,10 +16,16 @@ The output format per line is:
 The nodename and value are escaped (\n, \t and \\).  Control-characters are
 removed.
 
-The type can be: o (for object), a (for array), p (for primitive such as true,
-false, null, a number) or s (for string).
+The type field is a single byte and can be:
 
-Then filtering is easy using some awk script on the node "selector".
+	a for array
+	b for bool
+	n for number
+	o for object
+	s for string
+	? for null
+
+Filtering on the first field "nodename" is easy using awk for example.
 
 See the json2tsv(1) man page for the full documentation.
 
@@ -32,29 +38,24 @@ plain-text list using awk:
 
 
 #!/bin/sh
-curl -s -H 'User-Agent:' 'https://old.reddit.com/.json' | \
+curl -s -H 'User-Agent:' 'https://old.reddit.com/.json?raw_json=1&limit=100' | \
 json2tsv | \
-awk 'BEGIN {
-	FS = OFS = "\t";
-	n = 0;
-	title = author = subreddit = "";
-}
+awk -F '\t' '
 function show() {
-	if (length(title) == 0)
+	if (length(o["title"]) == 0)
 		return;
-	print n ". " title " by " author " in r/" subreddit;
-	print url;
+	print n ". " o["title"] " by " o["author"] " in r/" o["subreddit"];
+	print o["url"];
 	print "";
 }
 $1 == ".data.children[].data" {
 	show();
 	n++;
-	title = url = author = subreddit = "";
+	delete o;
 }
-$1 == ".data.children[].data.url" { url = $3; }
-$1 == ".data.children[].data.title" { title = $3; }
-$1 == ".data.children[].data.author" { author = $3; }
-$1 == ".data.children[].data.subreddit" { subreddit = $3; }
+$1 ~ /^\.data\.children\[\]\.data\.[a-zA-Z0-9_]*$/ {
+	o[substr($1, 23)] = $3;
+}
 END {
 	show();
 }'

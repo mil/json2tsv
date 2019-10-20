@@ -8,35 +8,51 @@ PREFIX = /usr/local
 MANPREFIX = ${PREFIX}/man
 DOCPREFIX = ${PREFIX}/share/doc/${NAME}
 
+RANLIB = ranlib
+
 BIN = ${NAME}
 SRC = ${BIN:=.c}
+HDR = json.h
 MAN1 = ${BIN:=.1}
 DOC = \
 	LICENSE\
 	README
 
+LIBJSON = libjson.a
+LIBJSONSRC = json.c
+LIBJSONOBJ = ${LIBJSONSRC:.c=.o}
+
+LIB = ${LIBJSON}
+
 all: ${BIN}
 
-${BIN}: ${@:=.o}
+${BIN}: ${LIB} ${@:=.o}
 
-OBJ = ${SRC:.c=.o}
+OBJ = ${SRC:.c=.o} ${LIBJSONOBJ}
+
+${OBJ}: ${HDR}
 
 .o:
-	${CC} ${LDFLAGS} -o $@ $<
+	${CC} ${LDFLAGS} -o $@ $< ${LIB}
 
 .c.o:
 	${CC} ${CFLAGS} ${CPPFLAGS} -o $@ -c $<
 
+${LIBJSON}: ${LIBJSONOBJ}
+	${AR} rc $@ $?
+	${RANLIB} $@
+
 dist:
 	rm -rf "${NAME}-${VERSION}"
 	mkdir -p "${NAME}-${VERSION}"
-	cp -f ${MAN1} ${DOC} ${SRC} Makefile "${NAME}-${VERSION}"
+	cp -f ${MAN1} ${DOC} ${HDR} \
+		${SRC} ${LIBJSONSRC} Makefile "${NAME}-${VERSION}"
 	# make tarball
 	tar -cf - "${NAME}-${VERSION}" | gzip -c > "${NAME}-${VERSION}.tar.gz"
 	rm -rf "${NAME}-${VERSION}"
 
 clean:
-	rm -f ${BIN} ${OBJ}
+	rm -f ${BIN} ${OBJ} ${LIB}
 
 install: all
 	# installing executable files.
