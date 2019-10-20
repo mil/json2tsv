@@ -1,4 +1,4 @@
-.Dd October 15, 2019
+.Dd October 20, 2019
 .Dt JSON2TSV 1
 .Os
 .Sh NAME
@@ -24,8 +24,15 @@ Control-characters such as a newline, TAB and backslash (\\n, \\t and \\\\) are
 escaped in the nodename and value fields.
 Other control-characters are removed.
 .Pp
-The type field is a single byte and can be: a (for array), o (for object), p
-(for primitive such as true, false, null, a number) or s (for string).
+The type field is a single byte and can be:
+.Bl -tag -width Ds
+.It a for array
+.It b for bool
+.It n for number
+.It o for object
+.It s for string
+.It ? for null
+.El
 .Sh SEE ALSO
 .Xr awk 1 ,
 .Xr grep 1
@@ -34,11 +41,13 @@ The type field is a single byte and can be: a (for array), o (for object), p
 .Sh CAVEATS
 .Bl -item
 .It
-Characters in object keys such as a dot or brackets are not changed, this
-can change the meaning of the nodename field.
+Characters in object keys such as a dot or brackets are not escaped in the TSV
+output, this can change the meaning of the nodename field.
 .It
 The JSON parser handles all valid JSON.
-It also handles some invalid JSON like object key strings without quoting (").
+It also allows some invalid JSON extension: it does not do a complete
+validation on numbers and is not strict with unicode input.
+See also RFC8259 section 9. Parsers.
 .It
 The maximum depth of objects or arrays is hard-coded to 64 levels deep.
 .El
