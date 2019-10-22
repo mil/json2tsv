@@ -82,7 +82,6 @@ capacity(char **value, size_t *sz, size_t cur, size_t inc)
 #define EXPECT_VALUE         "{[\"-0123456789tfn"
 #define EXPECT_STRING        "\""
 #define EXPECT_END           "}],"
-#define EXPECT_NOTHING       ""
 #define EXPECT_OBJECT_STRING EXPECT_STRING "}"
 #define EXPECT_ARRAY_VALUE   EXPECT_VALUE "]"
 
@@ -248,12 +247,12 @@ escchr:
 				JSON_INVALID(); /* unbalanced nodes */
 
 			nodes[--depth].index++;
-			if (!depth)
-				expect = EXPECT_NOTHING;
-			else
-				expect = EXPECT_END;
+			expect = EXPECT_END;
 			break;
 		case ',':
+			if (!depth)
+				JSON_INVALID(); /* unbalanced nodes */
+
 			nodes[depth - 1].index++;
 			if (nodes[depth - 1].type == TYPE_OBJECT) {
 				iskey = 1;
