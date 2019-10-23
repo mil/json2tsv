@@ -109,7 +109,7 @@ handlechr:
 			break;
 
 		/* skip JSON white-space, (NOTE: no \v, \f, \b etc) */
-		if (c && strchr(" \t\n\r", c))
+		if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
 			continue;
 
 		if (!c || !strchr(expect, c))
