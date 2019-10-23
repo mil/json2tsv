@@ -116,10 +116,6 @@ handlechr:
 
 		switch (c) {
 		case ':':
-			/* not in an object or key in object is not a string */
-			if (!depth || nodes[depth - 1].type != TYPE_OBJECT ||
-			    nodes[depth].type != TYPE_STRING)
-				JSON_INVALID();
 			iskey = 0;
 			expect = EXPECT_VALUE;
 			break;
