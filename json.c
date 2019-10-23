@@ -289,8 +289,9 @@ escchr:
 			expect = EXPECT_END;
 			while (1) {
 				c = GETNEXT();
-				if (!c || !strchr("0123456789eE+-.", c) ||
-				    c == EOF || p + 1 >= sizeof(pri)) {
+				if (c == EOF ||
+				    !c || !strchr("0123456789eE+-.", c) ||
+				    p + 1 >= sizeof(pri)) {
 					pri[p] = '\0';
 					cb(nodes, depth + 1, pri);
 					goto handlechr; /* do not read next char, handle this */
