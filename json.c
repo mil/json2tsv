@@ -83,6 +83,7 @@ capacity(char **value, size_t *sz, size_t cur, size_t inc)
 #define EXPECT_STRING        "\""
 #define EXPECT_END           "}],"
 #define EXPECT_OBJECT_STRING EXPECT_STRING "}"
+#define EXPECT_OBJECT_KEY    ":"
 #define EXPECT_ARRAY_VALUE   EXPECT_VALUE "]"
 
 #define JSON_INVALID()       do { ret = JSON_ERROR_INVALID; goto end; } while (0);
@@ -209,7 +210,7 @@ escchr:
 				}
 			}
 			if (iskey)
-				expect = ":";
+				expect = EXPECT_OBJECT_KEY;
 			else
 				expect = EXPECT_END;
 			break;
