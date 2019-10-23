@@ -221,7 +221,6 @@ escchr:
 				JSON_INVALID(); /* too deep */
 
 			nodes[depth].index = 0;
-			nodes[depth].type = TYPE_OBJECT;
 			if (c == '{') {
 				iskey = 1;
 				nodes[depth].type = TYPE_OBJECT;
