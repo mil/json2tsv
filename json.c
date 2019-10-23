@@ -107,7 +107,8 @@ handlechr:
 		if (c == EOF)
 			break;
 
-		if (c && strchr(" \t\n\r", c)) /* (no \v, \f, \b etc) */
+		/* skip JSON white-space, (NOTE: no \v, \f, \b etc) */
+		if (c && strchr(" \t\n\r", c))
 			continue;
 
 		if (!c || !strchr(expect, c))
@@ -197,6 +198,7 @@ escchr:
 					str[len++] = '\0';
 
 					if (iskey) {
+						/* copy string as key, including NUL byte */
 						if (capacity(&(nodes[depth].name), &(nodes[depth].namesiz), len, 1) == -1)
 							goto end;
 						memcpy(nodes[depth].name, str, len);
@@ -221,13 +223,13 @@ escchr:
 				JSON_INVALID(); /* too deep */
 
 			nodes[depth].index = 0;
-			if (c == '{') {
+			if (c == '[') {
+				nodes[depth].type = TYPE_ARRAY;
+				expect = EXPECT_ARRAY_VALUE;
+			} else if (c == '{') {
 				iskey = 1;
 				nodes[depth].type = TYPE_OBJECT;
 				expect = EXPECT_OBJECT_STRING;
-			} else if (c == '[') {
-				nodes[depth].type = TYPE_ARRAY;
-				expect = EXPECT_ARRAY_VALUE;
 			}
 
 			cb(nodes, depth + 1, "");
@@ -268,7 +270,8 @@ escchr:
 			expect = EXPECT_END;
 			break;
 		case 'f': /* false */
-			if (GETNEXT() != 'a' || GETNEXT() != 'l' || GETNEXT() != 's' || GETNEXT() != 'e')
+			if (GETNEXT() != 'a' || GETNEXT() != 'l' || GETNEXT() != 's' ||
+			    GETNEXT() != 'e')
 				JSON_INVALID();
 			nodes[depth].type = TYPE_BOOL;
 			cb(nodes, depth + 1, "false");
